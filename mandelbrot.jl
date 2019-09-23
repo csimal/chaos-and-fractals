@@ -24,7 +24,7 @@ for x in 1:w
             (2*x - w) / (w * zoom) + moveX,
             (2*y - h) / (h * zoom) + moveY
         )
-        img[y,x] = untildivergence(f(c),0)
+        img[x,y] = untildivergence(f(c),0)
     end
 end
 
