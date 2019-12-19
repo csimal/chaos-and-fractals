@@ -1,6 +1,6 @@
 using Plots
+using PyCall
 using DifferentialEquations
-#using PyPlot
 
 
 p = [0.2,0.2,5.7]

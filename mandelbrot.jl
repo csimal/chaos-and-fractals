@@ -1,6 +1,5 @@
 using Plots
 using Printf
-#using PlotlyJS
 
 function untildivergence(f, x, maxiter = 50)
     i = 0
@@ -61,14 +60,15 @@ const w, h = 1000, 1000
 img, xticks, xlabels, yticks, ylabels = mandelbrot_set(f, 0.001, xmax = 1, ymin = -1.5, ymax = 1.5)
 #img, xticks, xlabels, yticks, ylabels = julia_set(f(-0.17+im*0.78), 0.0005, xmin=-1.4, xmax=1.4, ymin=-1.2,ymax=1.2)
 
-#plotlyjs()
+
 heatmap(img,
         xticks = (xticks, xlabels),
         yticks = (yticks, ylabels),
         aspect_ratio=:equal
         )
 
-#= alternative, for better image aliasing
+# alternative, for better looking image
+#=
 using Images, Colors
 Gray.(img/50)
 =#
