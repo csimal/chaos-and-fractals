@@ -10,7 +10,7 @@ struct Box2
     xmax::Real
     ymax::Real
     # points in the box
-    points
+    points::Vector{Vector{Float64}}
 end
 
 function subdivide_box(b::Box2)
@@ -82,7 +82,7 @@ function box_counting_dimension_2d(points, maxiter=10, tol=0.001)
         if abs(d[i]-d[i-1]) < tol
             break # exit if d seems to have converged. This is not entirely foolproof but it will avoid unnecessary iterations when `points` has too few elements
         end
-        i += 1
+        i .+= 1
     end
     #push!(old_boxes, boxes)
     return d, N, ε*2.0 .^ -(0:(i-2))#, old_boxes
@@ -90,12 +90,19 @@ end
 
 # N-dimensional box
 struct BoxN
-    N::Integer
-    mins::Vector{Real}
-    maxs::Vector{Real}
-    points::Vector{Vector{Real}}
+    N::Integer # dimension of the box
+    mins::Vector{Float64} # vector of lower bounds on each dimension
+    maxs::Vector{Float64} # vector of upper bounds
+    points::Vector{Vector{Float64}} # points inside the box
 end
 
+"""
+    subdivide_box(b::BoxN)
+
+Subdivide an N-dimensional box `b` into 2^N subboxes with half the side lengths of `b`.
+
+The points in `b` are distributed into their respective subboxes. Any point on the borders of multiple boxes is put into the box whose mean point is closest to it. Returns an array of non empty boxes.
+"""
 function subdivide_box(b::BoxN)
     halves = (b.mins+b.maxs)/2
     boxes = Dict{BitVector,BoxN}()
@@ -125,7 +132,16 @@ function subdivide_box(b::BoxN)
     return collect(values(boxes))
 end
 
-function box_counting_dimension(points, maxiter=10, tol=0.001)
+"""
+    box_counting_dimension(points, maxiter=10, tol=0.001)
+
+Approximate the box counting dimension of `points` defined by
+`` d = \\lim_{ε\\longrightarrow0}\\frac{\\ln N_ε(E)}{-\\ln ε}. ``
+
+ This is done by taking the smallest box containing all points and subdividing it up to `maxiter` times or until d seems to have converged (with tolerance `tol`).
+ Returns vectors `d`, `N` and `ε`, containing respectively the iterates of d, the number of boxes N, and the box length ε.
+"""
+function box_counting_dimension(points::Vector{Vector{T}}, maxiter=10, tol=0.001) where T <: Real
     if isempty(points)
         error("points must be non empty")
     end
@@ -156,16 +172,31 @@ function box_counting_dimension(points, maxiter=10, tol=0.001)
     return d, N, ε*2.0 .^ -(0:(i-2))
 end
 
-function correlation_dimension(x, maxiter=10)
+"""
+    correlation_dimension(x, maxiter=10)
+
+Approximate the correlation dimension of `x` using `maxiter` iterations.
+
+Returns vectors `C` and `r` containing the iterates of the correlation function ``C(r)`` and the radii ``r``.
+"""
+function correlation_dimension(x::Vector{Vector{T}}, maxiter::Int=10) where T <: Real
     if isempty(x)
         error("x must be non empty")
     end
-    rmax = maximum(norm.(x)) # quick and dirty max radius
+    r = maximum(norm.(x)) # quick and dirty max radius
     N = length(x)
-    for i in 1:N, j in i:N
+    Cnums = zeros(Int, maxiter)
+    C = zeros(maxiter)
+    for i in 1:N-1, j in i+1:N
         d = norm(x[i]-x[j])
-        for k in 0:maxiter
-
+        for k in 1:maxiter
+            if d > r*2.0^(-k)
+                break
+            else
+                Cnums[k] += 1
+            end
         end
     end
+    C = float(Cnums)/((N*(N-1))/2)
+    return C, r * 2.0 .^ -(1:maxiter)
 end
