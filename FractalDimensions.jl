@@ -2,91 +2,6 @@ using LinearAlgebra
 using Statistics
 using StatsBase
 
-struct Box2
-    # lower bounds
-    xmin::Real
-    ymin::Real
-    # upper bounds
-    xmax::Real
-    ymax::Real
-    # points in the box
-    points::Vector{Vector{Float64}}
-end
-
-function subdivide_box(b::Box2)
-    xhalf = (b.xmin+b.xmax)/2
-    yhalf = (b.ymin+b.ymax)/2
-    b1 = Box2(b.xmin, b.ymin, xhalf, yhalf, [])
-    b2 = Box2(xhalf, b.ymin, b.xmax, yhalf, [])
-    b3 = Box2(b.xmin, yhalf, xhalf, b.ymax, [])
-    b4 = Box2(xhalf, yhalf, b.xmax, b.ymax, [])
-    border_points = []
-    for p in b.points
-        if p[1] < xhalf
-            if p[2] < yhalf
-                push!(b1.points, p)
-            elseif p[2] > yhalf
-                push!(b3.points, p)
-            else
-                push!(border_points, p) # deal with it later
-            end
-        elseif p[1] > xhalf
-            if p[2] < yhalf
-                push!(b2.points, p)
-            elseif p[2] > yhalf
-                push!(b4.points, p)
-            else
-                push!(border_points, p)
-            end
-        else
-            push!(border_points, p)
-        end
-    end
-    # discard empty boxes
-    boxes = filter(x->!isempty(x.points), [b1, b2, b3, b4])
-    # add each point to the box whose mean is closest to it
-    if !isempty(boxes)
-        for p in border_points
-            i = argmin(map(x->norm(mean(x)-p), map(x->x.points, boxes)))
-            push!(boxes[i].points, p)
-        end
-    else
-        # all points were on the border. Something went very wrong
-        return []
-    end
-
-    return boxes
-end
-
-function box_counting_dimension_2d(points, maxiter=10, tol=0.001)
-    if isempty(points)
-        error("points must be non empty")
-    end
-    x = map(p->p[1], points)
-    y = map(p->p[2], points)
-    #ε = (abs(maximum(x)-minimum(x))+abs(maximum(y)-minimum(y)))/2
-    ε = sqrt(abs(maximum(x)-minimum(x))*abs(maximum(y)-minimum(y))) # taking the geometric mean as the characteristic side length of the box
-    N = Vector{Int}()
-    d = Vector{Float64}()
-    boxes = [Box2(minimum(x), minimum(y), maximum(x), maximum(y), points)]
-    #old_boxes = []
-    push!(N, length(boxes))
-    push!(d, log(N[1])/(0*log(2)-log(ε)))
-    i = 2
-    while i <= maxiter && !isempty(boxes)
-        #push!(old_boxes, boxes)
-        tmp = map(subdivide_box, boxes)
-        boxes = isempty(tmp) ? [] : foldl(append!, tmp)
-        push!(N, length(boxes))
-        push!(d, log(N[i])/((i-1)*log(2)-log(ε)))
-        if abs(d[i]-d[i-1]) < tol
-            break # exit if d seems to have converged. This is not entirely foolproof but it will avoid unnecessary iterations when `points` has too few elements
-        end
-        i .+= 1
-    end
-    #push!(old_boxes, boxes)
-    return d, N, ε*2.0 .^ -(0:(i-2))#, old_boxes
-end
 
 # N-dimensional box
 struct BoxN
@@ -101,14 +16,14 @@ end
 
 Subdivide an N-dimensional box `b` into 2^N subboxes with half the side lengths of `b`.
 
-The points in `b` are distributed into their respective subboxes. Any point on the borders of multiple boxes is put into the box whose mean point is closest to it. Returns an array of non empty boxes.
+The points in `b` are assigned to their respective subboxes. Any point on the border of multiple boxes is put into the box whose mean point is closest to it. Returns an array of non empty boxes.
 """
 function subdivide_box(b::BoxN)
     halves = (b.mins+b.maxs)/2
     boxes = Dict{BitVector,BoxN}()
     border_points = []
     for p in b.points
-        if any(p .== halves)
+        if any(p .== halves) # does p lie on the border of multiple boxes?
             push!(border_points, p)
         else
             key = p .> halves
@@ -125,6 +40,7 @@ function subdivide_box(b::BoxN)
         return []
     end
     centers = [(k, mean(v.points)) for (k,v) in boxes]
+    # assign each border point to the box whose center is closest to it
     for p in border_points
         i = argmin(Dict([k=> norm(v-p) for (k,v) in centers]))
         push!(boxes[i].points, p)
@@ -169,7 +85,61 @@ function box_counting_dimension(points::Vector{Vector{T}}, maxiter=10, tol=0.001
         end
         i += 1
     end
-    return d, N, ε*2.0 .^ -(0:(i-2))
+    return d, N, ε*2.0 .^ -(0:(i-1))
+end
+
+function box_counting_dimension(points::Vector{T}, maxiter=10, tol=0.001) where T<:Real
+    return box_counting_dimension(map(x->[x], points), maxiter, tol)
+end
+
+"""
+    box_counting_dimension(A, maxiter=10, tol=0.001)
+
+Approximate the box counting dimension for a 2D array of bools.
+
+This is meant for use with images and 2D arrays by selecting which pixels you want with a predicate.
+"""
+function box_counting_dimension(A::BitArray{2}, maxiter=10, tol=0.001)
+    return box_counting_dimension(array_to_points(A), maxiter, tol)
+end
+
+"""
+    array_to_points(A)
+
+Convert a 2D Array of bools to a list of 2D points corresponding to indices where `A` is `true`.
+"""
+function array_to_points(A::BitArray{2})
+    (m,n) = size(A)
+    points::Vector{Vector{Float64}} = []
+    for j in 1:n, i in 1:m
+        if A[i,j]
+            push!(points, [(i-0.5)/m, (j-0.5)/n])
+        end
+    end
+    return points
+end
+
+"""
+    boundary(A)
+
+Compute the boundary a 2D region.
+
+The region is represented by a 2D BitArray where entries equal to `true` denote points in the region.
+"""
+function boundary(A::BitArray{2})
+    (m,n) = size(A)
+    B = falses(m,n)
+    for j in 1:n, i in 1:m
+        sum = 0
+        if i > 1 sum += A[i-1,j]; end
+        if i < m sum += A[i+1,j]; end
+        if j > 1 sum += A[i,j-1]; end
+        if j < n sum += A[i,j+1]; end
+        if sum < 4 && sum > 1
+            B[i,j] = true
+        end
+    end
+    return B
 end
 
 """
@@ -199,4 +169,17 @@ function correlation_dimension(x::Vector{Vector{T}}, maxiter::Int=10) where T <:
     end
     C = float(Cnums)/((N*(N-1))/2)
     return C, r * 2.0 .^ -(1:maxiter)
+end
+
+"""
+    loglog_regression(y,x)
+
+Compute the OLS regression of `log.(y)` by `log.(x)`.
+
+This only returns the coefficients, so you may want to use the `GLM` package for more information.
+"""
+function loglog_regression(y::Vector,x::Vector)
+    X = ones(length(x),2)
+    X[:,1] = log.(x)
+    return X\log.(y)
 end

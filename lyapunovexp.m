@@ -30,5 +30,5 @@ function x = logistic2(y,r)
     x = r*r*y*(1-y)*(1 - r*y * (1-y))
 end
 function x = derlogi(x,r)
-    x = 4 * (1 - 2 * x);
+    x = r * (1 - 2 * x);
 end
