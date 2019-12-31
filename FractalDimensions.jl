@@ -85,7 +85,7 @@ function box_counting_dimension(points::Vector{Vector{T}}, maxiter=10, tol=0.001
         end
         i += 1
     end
-    return d, N, ε*2.0 .^ -(0:(i-1))
+    return d, N, ε*2.0 .^ -(0:(length(N)-1))
 end
 
 function box_counting_dimension(points::Vector{T}, maxiter=10, tol=0.001) where T<:Real
