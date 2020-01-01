@@ -1,9 +1,8 @@
 include("FractalDimensions.jl")
 
-S_0 = [[0.0,0.0], [1.0,0.0], [0.5,1.0]]
+#S_0 = [[0.0,0.0], [1.0,0.0], [0.5,1.0]]
 S_0 = [[0.0,0.0], [1.0,0.0], [0.5,2.0]]
-S_0 = [[0.0,0.0], [1.0,0.0], [0.0,1.0]]
-
+#S_0 = [[0.0,0.0], [1.0,0.0], [0.0,1.0]]
 
 f1(x) = (S_0[1]+x)/2
 f2(x) = (S_0[2]+x)/2
@@ -31,18 +30,18 @@ plotlyjs()
 scatter(x,y, markersize=1, markerstrokealpha=0.0, legend=false)
 savefig("sierpinsky.eps")
 
-
-d, N, ε = box_counting_dimension(s, 10)
+d, N, ε = box_counting_dimension(s, 9, 0.0)
 
 loglog_regression(N,ε)
 
-
 log(3)/log(2)
 
-plot(-log.(ε), log.(N), xlabel="-ln ε", ylabel="ln N")
+plot(-log.(ε), log.(N), xlabel="-ln ε", ylabel="ln N", marker=:d, legend=false)
+savefig("boxdim_sierpinsky.eps")
 
 C, r = correlation_dimension(s)
 
-loglog_regression(C[1:9],r[1:9])
+loglog_regression(C,r)
 
-plot(log.(r), log.(C), xlabel="ln r", ylabel="ln C")
+plot(log.(r), log.(C), xlabel="ln r", ylabel="ln C", marker=:d, legend=false)
+savefig("cordim_sierpinsky.eps")

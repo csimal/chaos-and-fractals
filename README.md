@@ -5,7 +5,7 @@ Various functions and code samples centered around Chaos and Fractals. This was 
 ## Installation
 Most of the code is in [Julia](http://www.julialang.org). In order to run it, we recommend you use [JuliaPro](https://juliacomputing.com/products/juliapro.html) as it allows using Julia in a workflow similar to Matlab. Users coming from Matlab should check out [this page](https://docs.julialang.org/en/v1/manual/noteworthy-differences/) for a detailed list of the differences between both languages.
 
-Once you've installed Julia and downloaded the code, you will need to install several community packages. Thankfully, this can be done very easily by running `dependencies.jl`.
+Once you've installed Julia and downloaded the code, you will need to install several community packages. Thankfully, this can be done very easily by running `dependencies.jl`. If you want a quick introduction to the basics of Julia, we recommend you look at `introduction.jl` first.
 
 The code was initially developed on Julia 1.2.0, but was tested without issues on Julia 1.3.0 (the latest Julia release at the time of writing)
 

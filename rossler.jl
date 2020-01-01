@@ -36,13 +36,10 @@ function local_maxima(x::Vector{T}) where T<:Real
 end
 
 z = map(v->v[3], sol.u)
-
 zmax = local_maxima(z)
 
 pygui(false)
-
 plot(zmax)
-
 scatter(
     [zmax[i] for i in 1:(length(zmax)-1)],
     [zmax[i] for i in 2:length(zmax)],
@@ -62,7 +59,6 @@ r = Systems.roessler(a=0.1,b=0.1,c=18)
 lyapunov(r,1000.0)
 λ = lyapunovs(r,1000.0)
 kaplanyorke_dim(λ) # Lyapunov dimension
-
 
 
 crange = LinRange(1,18,1000)

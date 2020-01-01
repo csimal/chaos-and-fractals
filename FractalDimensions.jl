@@ -70,7 +70,7 @@ function box_counting_dimension(points::Vector{Vector{T}}, maxiter=10, tol=0.001
         maxs[i] = maximum(tmp)
     end
     boxes = [BoxN(n, mins, maxs, points)]
-    ε = geomean(abs.(maxs-mins))
+    ε = geomean(abs.(maxs-mins)) # use geomtric mean for side length
     N = [1]
     d = Vector{Float64}()
     push!(d, log(N[1])/(0*log(2)-log(ε)))
@@ -81,7 +81,7 @@ function box_counting_dimension(points::Vector{Vector{T}}, maxiter=10, tol=0.001
         push!(N, length(boxes))
         push!(d, log(N[i])/((i-1)*log(2)-log(ε)))
         if abs(d[i]-d[i-1]) < tol
-            break # exit if d seems to have converged. This is not entirely foolproof but it will avoid unnecessary iterations when `points` has too few elements
+            break # exit if d seems to have converged. This is not entirely foolproof but it will avoid unnecessary iterations when `points` has too few elements. Set tol=0.0 to disable
         end
         i += 1
     end
