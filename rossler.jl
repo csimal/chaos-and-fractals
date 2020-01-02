@@ -78,6 +78,7 @@ kaplanyorke_dim(λ) # Lyapunov dimension
 crange = LinRange(1,18,1000)
 n = 5000
 Ttr = 2000
+# bifurcation diagram of the Poincaré map of the z coordinate on the plane y=0
 diagram = produce_orbitdiagram(r, (2,0.0), 3, 3, crange; n=n, Ttr=Ttr)
 
 L = length(crange)
@@ -88,14 +89,15 @@ for j in 1:L, z in diagram[j]
     push!(y,z)
 end
 
-gr()
+plotlyjs()
 scatter(
     x,
     y,
-    markersize=0.1,
+    markersize=0.5,
     markerstrokealpha=0.0,
     markercolor = :black,
     legend=false,
+    grid = false,
     xlabel = "c",
     ylabel = "z"
     )
