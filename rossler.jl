@@ -5,8 +5,6 @@ using Statistics
 using Base.Iterators
 
 
-p = [0.1,0.1,6.0]
-
 function rossler(du,u,p,t)
     x, y, z = u
     a, b, c = p
@@ -15,15 +13,19 @@ function rossler(du,u,p,t)
     du[3] = b + z*(x-c)
 end
 
+p = [0.1,0.1,18]
 u0 = [5., 5., 1.]
-tspan = (0.0,5000.0)
+tspan = (0.0,1000.0)
 
 prob = ODEProblem(rossler, u0, tspan, p)
+tmp = solve(prob, abstol=1e-9)
+prob = ODEProblem(rossler, tmp.u[end], (0.0,5000.0), p)
 sol = solve(prob, abstol=1e-9)
 
 pyplot()
-pygui(true)
-plot(sol,vars=(1,2,3), line=1)
+pygui(false)
+plot(sol,vars=(1,2,3), lw=0.1, legend=false)
+savefig("rossler_c13.pdf")
 
 function local_maxima(x::Vector{T}) where T<:Real
     y = []
@@ -39,7 +41,6 @@ z = map(v->v[3], sol.u)
 zmax = local_maxima(z)
 
 pygui(false)
-plot(zmax)
 scatter(
     [zmax[i] for i in 1:(length(zmax)-1)],
     [zmax[i] for i in 2:length(zmax)],
@@ -50,6 +51,19 @@ scatter(
     xlabel = "z[k]",
     ylabel = "z[k+1]"
     )
+
+
+include("FractalDimensions.jl")
+d, N, ε = box_counting_dimension(sol.u, 8)
+loglog_regression(N,ε)
+
+plot(-log.(ε), log.(N), xlabel="-ln ε", ylabel="ln N", marker=:d, legend=false)
+
+C, r = correlation_dimension(sol.u, 15)
+loglog_regression(C,r)
+
+plot(log.(r), log.(C), xlabel="ln r", ylabel="ln C", marker=:d, legend=false)
+savefig("cordim_rossler.pdf")
 
 
 using DynamicalSystems
@@ -85,3 +99,5 @@ scatter(
     xlabel = "c",
     ylabel = "z"
     )
+
+savefig("rossler_bifurcation.pdf")
